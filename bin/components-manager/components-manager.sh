@@ -1,4 +1,21 @@
 #!/bin/bash
+# components-manager.sh
+#
+# Опис:
+# Керування компонентами Shell (сервіси, пакети, користувачі, бази даних тощо)
+# ─────────────────────────────────────────────────────────────────────────────
+# Sources:
+#   components-data.sh 		- загальні дані
+#   component-database.sh	- модуль для роботи з базами даних
+#   component-explorer.sh	- модуль для роботи з файлами, папками
+#   component-ftpuser.sh	- модуль для роботи з FTP-користувачами
+#   component-package.sh 	- модуль для роботи з пакетами
+#   component-service.sh 	- модуль для роботи з сервісами
+#   component-system.sh 	- модуль для роботи з налаштуваннями системи
+#   component-user.sh 		- модуль для роботи з користувачами
+#   component-webuser.sh 	- модуль для роботи з веб-користувачами
+#   ../menu-choose.sh 		- функціонал для роботи з меню
+# ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 shopt -s inherit_errexit 2>/dev/null || true
