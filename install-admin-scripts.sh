@@ -18,11 +18,12 @@ YELLOW='\033[1;33m'
 RED='\033[1;31m'
 NC='\033[0m'
 
-success(){ echo -e "${GREEN}✔${NC} $*"; }
-warn()   { echo -e "${YELLOW}⚠️${NC} $*"; }
-error()  { echo -e "${RED}✖${NC} $*" >&2; exit 1; }
+log_success(){ echo -e "${GREEN}✔ ${NC} $*"; }
+log_warn()   { echo -e "${YELLOW}⚠️ ${NC} $*"; }
+log_error()  { echo -e "${RED}✖ ${NC} $*" >&2; exit 1; }
+
 confirm() {
-  echo -en "${YELLOW}[❓]${NC} $1 [y/N]: "
+  echo -en "${YELLOW}[❓] ${NC} $1 [y/N]: "
   read -r REPLY
   [[ "$REPLY" =~ ^[Yy]$ ]]
 }
@@ -130,8 +131,86 @@ declare -A SCRIPTS=(
   ["vsedit"]="vsedit.sh"
 )
 
-ADMIN_SCRIPTS_DIR="/usr/local/admin-scripts"
+ADMIN_SCRIPTS_DIR="/usr/local/admin-scripts/bin"
 BIN_DIR="/usr/local/bin"
+
+move_item(){
+  local rel="$1"
+  local DIR_OLD="$2"
+  local DIR_NEW="$3"
+  
+  # dir
+  if [[ "$rel" == */* ]]; then
+    local dir="${rel%%/*}"
+	local path_old="$DIR_OLD/$dir"
+	local path_new="$DIR_NEW/$dir"
+	
+	if [[ -d "$path_new" ]]; then
+		log_success "Папку $dir уже перенесено"
+		return 0
+	elif [[ -d "$path_old" ]]; then
+		mkdir -p "$DIR_NEW"
+		mv "$path_old" "$DIR_NEW/"
+		log_success "Папку $dir перенесено в $DIR_NEW/"
+	else
+		log_warn "Папку $path_old не знайдено"
+	fi
+	
+  # file
+  else
+    local file="$rel"
+	local path_old="$DIR_OLD/$rel"
+	local path_new="$DIR_NEW/$rel"
+	
+	if [[ -f "$path_new" ]]; then
+		log_success "Файл $file уже перенесено"
+		return 0
+	elif [[ -f "$path_old" ]]; then
+		mkdir -p "$DIR_NEW"
+		mv "$path_old" "$path_new"
+		log_success "Файл $file перенесено в $DIR_NEW/"
+	else
+		log_warn "Файл $path_old не знайдено"
+	fi
+  fi
+}
+
+remove_item_link(){
+	local key="$1"
+	local link_path="$BIN_DIR/$key"
+	
+	if [[ -L "$link_path" || -e "$link_path" ]]; then
+		sudo rm -f "$link_path"
+		sudo rm -f "$link_path.sh"
+	fi
+}
+
+set_item(){
+	local key="$1"
+	local -n _scripts="$2"
+	
+	local relative_path="${_scripts[$key]}"
+	local full_path="$ADMIN_SCRIPTS_DIR/$relative_path"
+	local link_path="$BIN_DIR/$key"
+	
+	if [[ -f "$full_path" ]]; then
+	  
+	  remove_item_link "$key"
+	
+	  sudo chmod +x "$full_path"
+      sudo ln -s "$full_path" "$link_path"
+	  sed -i 's/\r$//' "$full_path"
+	
+      log_success "$key встановлено"
+	  
+	else
+	  
+	  # Видаляємо залишковий симлінк
+      remove_item_link "$key"
+	  
+	  log_error "Файл $full_path не знайдено"
+	fi
+}
 
 # 🎯 Функція для розпакування архіву
 extract_archive() {
@@ -152,20 +231,21 @@ extract_archive() {
       ;;
     *.rar)
       if ! command -v unrar >/dev/null; then
-        error "❌  Для розпакування .rar потрібно встановити 'unrar'"
+        log_error "Для розпакування .rar потрібно встановити 'unrar'"
       fi
       sudo unrar x -o+ "$archive" "$dest"
       ;;
     *)
-      error "❌  Невідомий формат архіву: $archive"
+      log_error "Невідомий формат архіву: $archive"
       ;;
   esac
 }
 
 # 🧹 Якщо вказано архів — оновлюємо скрипти
 if [[ -n "$ARCHIVE_PATH" ]]; then
+  echo "ℹ️  Оновлення скриптів з архіву $ARCHIVE_PATH"
+  
   if [[ -f "$ARCHIVE_PATH" ]]; then
-
     sudo mkdir -p "$ADMIN_SCRIPTS_DIR"
 	echo "🧹  Видаляю старі файли у $ADMIN_SCRIPTS_DIR"
 	
@@ -178,41 +258,23 @@ if [[ -n "$ARCHIVE_PATH" ]]; then
 	done
     extract_archive "$ARCHIVE_PATH" "$ADMIN_SCRIPTS_DIR"
   else
-    error "❌  Архів не знайдено: $ARCHIVE_PATH"
+    log_error "Архів не знайдено: $ARCHIVE_PATH"
   fi
 else
-  echo "ℹ️ Архів не вказано — використовуються наявні скрипти"
   sudo mkdir -p "$ADMIN_SCRIPTS_DIR"
 fi
 
+# Перенесення скриптів у підпапку
+#for rel in "${SCRIPTS[@]}"; do
+#  move_item "$rel" "/usr/local/admin-scripts" "$ADMIN_SCRIPTS_DIR"
+#done
+
 # 🔗 Встановлення симлінків
 for key in "${!SCRIPTS[@]}"; do
-  relative_path="${SCRIPTS[$key]}"
-  full_path="$ADMIN_SCRIPTS_DIR/$relative_path"
-  link_path="$BIN_DIR/$key"
-
-  if [[ -f "$full_path" ]]; then
-
-    if [[ -L "$link_path" || -e "$link_path" ]]; then
-      sudo rm -f "$link_path"
-	  sudo rm -f "$link_path.sh"
-    fi
-	
-	sudo chmod +x "$full_path"
-    sudo ln -s "$full_path" "$link_path"
-	sed -i 's/\r$//' "$full_path"
-	
-    success "$key встановлено"
-  else
-    echo "❌  Файл не існує: $full_path"
-
-    if [[ -L "$link_path" || -e "$link_path" ]]; then
-      echo "🧹  Видаляю залишковий симлінк: $link_path"
-      sudo rm -f "$link_path"
-	  sudo rm -f "$link_path.sh"
-    fi
-  fi
+  set_item "$key" SCRIPTS
 done
 
+# Фіксимо знаки переносу рядків
 find "$ADMIN_SCRIPTS_DIR" -type f -name "*.sh" -exec sed -i 's/\r$//' {} +
-success "Встановлення скриптів завершено."
+
+log_success "Встановлення скриптів завершено."
