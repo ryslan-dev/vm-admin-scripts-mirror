@@ -1216,3 +1216,5 @@ function menu_choose() {
   else                          	return "$RC_OK";        # OK
   fi
 }
+
+# DOC END
