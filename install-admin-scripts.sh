@@ -2,10 +2,7 @@
 # 
 # key="SCRIPT_NAME.sh"
 # value="SCRIP_FOLDER/SCRIPT_NAME.sh"
-# 
-# sudo micro /usr/local/admin-scripts/$value
-# sudo chmod +x /usr/local/admin-scripts/$value
-# sudo ln -s /usr/local/admin-scripts/$value /usr/local/bin/$key
+#
 #
 # Підтримує архіви .tar.gz, .tar, .zip, .rar
 
@@ -91,15 +88,6 @@ declare -A SCRIPTS=(
 
   # ⚙️ Components manager
   ["components-manager"]="components-manager/components-manager.sh"
-  ["components-data"]="components-manager/components-data.sh"
-  ["component-package"]="components-manager/component-package.sh"
-  ["component-service"]="components-manager/component-service.sh"
-  ["component-user"]="components-manager/component-user.sh"
-  ["component-webuser"]="components-manager/component-webuser.sh"
-  ["component-ftpuser"]="components-manager/component-ftpuser.sh"
-  ["component-database"]="components-manager/component-database.sh"
-  ["component-explorer"]="components-manager/component-explorer.sh"
-  ["component-system"]="components-manager/component-system.sh"
   
   # 👥️ Користувачі
   ["get-sudo-users"]="get-sudo-users.sh"

@@ -5,29 +5,46 @@
 # Керування компонентами Shell (сервіси, пакети, користувачі, бази даних тощо)
 # ─────────────────────────────────────────────────────────────────────────────
 # Sources:
-#   components-data.sh 		- загальні дані
-#   component-database.sh	- модуль для роботи з базами даних
-#   component-explorer.sh	- модуль для роботи з файлами, папками
-#   component-ftpuser.sh	- модуль для роботи з FTP-користувачами
-#   component-package.sh 	- модуль для роботи з пакетами
-#   component-service.sh 	- модуль для роботи з сервісами
-#   component-system.sh 	- модуль для роботи з налаштуваннями системи
-#   component-user.sh 		- модуль для роботи з користувачами
-#   component-webuser.sh 	- модуль для роботи з веб-користувачами
-#   ../menu-choose.sh 		- функціонал для роботи з меню
+#   ../lib/components-manager/components-data.sh 	- загальні дані
+#   ../lib/components-manager/component-database.sh	- модуль для роботи з базами даних
+#   ../lib/components-manager/component-explorer.sh	- модуль для роботи з файлами, папками
+#   ../lib/components-manager/component-ftpuser.sh	- модуль для роботи з FTP-користувачами
+#   ../lib/components-manager/component-package.sh 	- модуль для роботи з пакетами
+#   ../lib/components-manager/component-service.sh 	- модуль для роботи з сервісами
+#   ../lib/components-manager/component-system.sh 	- модуль для роботи з налаштуваннями системи
+#   ../lib/components-manager/component-user.sh 	- модуль для роботи з користувачами
+#   ../lib/components-manager/component-webuser.sh 	- модуль для роботи з веб-користувачами
+#   ../lib/menu-choose/menu-choose.sh 				- функціонал для роботи з меню
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 shopt -s inherit_errexit 2>/dev/null || true
 IFS=$'\n\t'
 
-# Source
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/components-data"
-source "$SCRIPT_DIR/menu-choose"
+# --- Resolve script real path even if called via symlink ---
+# (під Linux достатньо readlink -f)
+SCRIPT_REALPATH="$(readlink -f -- "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_REALPATH")" && pwd)"     # /usr/local/admin-scripts/bin
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"                      # /usr/local/admin-scripts
+LIB_DIR="$ROOT_DIR/lib"                                       # /usr/local/admin-scripts/lib
 
-echo "$SCRIPT_DIR/components-data"
-echo "$SCRIPT_DIR/menu-choose"
+# --- Підключення бібліотек ---
+source "$LIB_DIR/components-manager/components-data.sh"
+source "$LIB_DIR/menu-choose/menu-choose.sh"
+
+# --- Отримати шлях до бібліотеки за типом ---
+get_component_file() {
+    local type_ref="$1"      # може бути значення або ім'я змінної
+    local -n file_ref="$2"   # змінна, куди записуємо результат
+
+    # Якщо type_ref — ім'я існуючої змінної, використовуємо її значення
+    if [[ ${!type_ref+x} ]]; then
+        type_ref="${!type_ref}"
+    fi
+
+    # Формуємо шлях
+    file_ref="$LIB_DIR/components-manager/component-${type_ref}.sh"
+}
 
 # 🛑 Root перевірка
 if [[ "$EUID" -ne 0 ]]; then
@@ -1577,32 +1594,6 @@ function component_type_menu(){
 	
 		break
 	done
-}
-
-function get_component_file() {
-    local type_ref="$1"      # може бути значення або ім'я змінної
-    local -n file_ref="$2"   # змінна, куди записуємо результат
-
-    # Якщо type_ref — ім'я існуючої змінної, використовуємо її значення
-    if [[ ${!type_ref+x} ]]; then
-        type_ref="${!type_ref}"
-    fi
-
-    # Формуємо шлях
-    file_ref="$SCRIPT_DIR/component-$type_ref"
-}
-
-function source_component_file(){
-	local comp_file
-	get_component_file TYPE comp_file
-	
-	# Перевіряємо чи існує файл перед source
-	if [[ -f $comp_file ]]; then
-		source "$comp_file"
-	else
-		log_error "Модуль $comp_file для '${HEADER_LABELS[$TYPE]:-$TYPE}' не знайдено"
-		return 1
-	fi
 }
 
 # ===================== MAIN MENU =====================
