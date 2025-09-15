@@ -20,38 +20,38 @@
 
 ---
 
-  # 📦 Бекапи
+  ### 📦 Бекапи
   backup-admin-scripts.sh
   backup-website.sh
   backup-website-db.sh
   backup-website-files.sh
 
-  # 🌀 WordPress
+  ### 🌀 WordPress
   clone-wordpress.sh
   install-wordpress.sh
   delete-wordpress.sh
   
-  # 🌐 Веб-панель
+  ### 🌐 Веб-панель
   init-webpanel.sh
   create-webaccount.sh
   delete-webaccount.sh
   create-website.sh
 
-  # 📂 FTP
+  ### 📂 FTP
   add-ftpuser.sh
   get-ftpuser.sh
   update-ftpuser.sh
   delete-ftpuser.sh
 
-  # 🛠️ Права
+  ### 🛠️ Права
   set-webaccount-perms.sh
   set-root-perms.sh
   
-  # SSL
+  ### SSL
   issue-website-ssl-certificate.sh
   renew-ssl-certificates.sh
 
-  # 🌍 GCP
+  ### 🌍 GCP
   gcp-backup-disk.sh
   gcp-backup-folder-map.sh
   gcp-backup-manager.sh
@@ -66,10 +66,10 @@
   gcp-restore-disk.sh
   gcp-set-disk-auto-delete.sh
 
-  # ⚙️ Components manager
+  ### ⚙️ Components manager
   components-manager.sh
   
-  # 👥️ Користувачі
+  ### 👥️ Користувачі
   get-sudo-users.sh
   get-sudo-groups.sh
   add-user.sh
@@ -84,12 +84,12 @@
   delete-user-from-group.sh
   check-oslogin.sh
   
-  # Провідник
+  ### Провідник
   shell-explorer.sh
   shell-explorers.sh
   setup-tmux.sh
   
-  # ⚙️ Інші утиліти
+  ### ⚙️ Інші утиліти
   menu-choose.sh
   import-db-table.sh
   kill-user-vscode-processes.sh
@@ -104,7 +104,7 @@
 
 ---
 
-# /lib/components-manager/
+  ### /lib/components-manager/
   components-data.sh
   component-package.sh
   component-service.sh
@@ -115,5 +115,5 @@
   component-system.sh
   component-explorer.sh
 
-# /lib/menu-choose/
+  ### /lib/menu-choose/
   menu-choose.sh
