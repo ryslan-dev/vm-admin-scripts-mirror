@@ -21,10 +21,10 @@
 ---
 
   ### 📦 Бекапи
-  backup-admin-scripts.sh
-  backup-website.sh
-  backup-website-db.sh
-  backup-website-files.sh
+  - backup-admin-scripts.sh
+  - backup-website.sh
+  - backup-website-db.sh
+  - backup-website-files.sh
 
   ### 🌀 WordPress
   clone-wordpress.sh
