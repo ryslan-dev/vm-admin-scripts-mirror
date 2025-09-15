@@ -13,14 +13,22 @@
 # - Іменний аргумент у функції: altscreen=1|0|on|off|alt|main|auto (має пріоритет)
 # - Або змінна оточення: MENU_CHOOSE_ALTSCREEN=1|0
 #
+# Item columns:
+# - можна ділити на колонки елемент списку
+# - можна показувати певні колонки елемента списку
+# - можна повертати значення певної колонки елемента списку
+#
+# Панель Actions:
+# - можна вмикати панель з кнопками дії
+#
 # Повернення:
 #   0   = OK  (ok/apply/save/done/confirm) 				  (actionvar="ok"   або лейбл дії)
 #   RC_CANCEL (def 2) = CANCEL (Esc/Cancel/Clear/None/No) (actionvar="esc"  або лейбл дії)
 #   RC_EXIT   (def 3) = EXIT (Exit/Quit/Ctrl+Q)           (actionvar="exit" або лейбл дії)
 #   130       = ABORT (Ctrl+C)                            (actionvar="abort")
 #
-# actionvar: якщо натиснули кнопку на панелі — повертає точний лейбл дії (як у actions),
-#            інакше — одне з: ok / esc / exit / abort (за fallback-правилами).
+# actionvar - змінна, в яку записується остання виконувана дія:
+# якщо натиснули кнопку на панелі — повертає точний лейбл дії (як у actions), інакше — одне з: ok / esc / exit / abort (за fallback-правилами).
 # ─────────────────────────────────────────────────────────────────────────────
   
   # Хелпер для альтернативного екрану
@@ -198,25 +206,26 @@
   # --- Малювання (без повного clear) ---
   draw_line_content() {
     local i=$1
-    local cursor="  "
-    [[ $i -eq $selected ]] && cursor="> "
+	local display_cursor="$cursor_space_str"
+	
+    [[ $i -eq $selected ]] && display_cursor="$cursor"
 
     # беремо підготовлений дисплей-текст, якщо item колонки увімкнені
-    local text
+    local display_text
     if (( _cols_enabled )); then
-      text="${_disp[$i]}"
+      display_text="${_disp[$i]}"
     else
-      text="${_items[$i]}"
+      display_text="${_items[$i]}"
     fi
 
     if [[ "$multi" == "1" ]]; then
       if is_marked "$i"; then
-        printf "%s☑️  %s" "$cursor" "$text"
+        printf "%s☑️  %s" "$display_cursor" "$display_text"
       else
-        printf "%s⬜  %s" "$cursor" "$text"
+        printf "%s⬜  %s" "$display_cursor" "$display_text"
       fi
     else
-      printf "%s%s" "$cursor" "$text"
+      printf "%s%s" "$display_cursor" "$display_text"
     fi
   }
 
@@ -351,6 +360,7 @@
 function menu_choose() {
   
   local items_ref="" outvar="" multi=0 header=""
+  local cursor="" cursor_space=""
   local altscreen=""   # alt-screen
   local return_type="" index_base=""  # режим повернення (values|indices) і база індексу (0|1)
   local actions_ref="" actions=""     # джерело панелі дій: масив або список через кому/пробіли
@@ -365,6 +375,8 @@ function menu_choose() {
       multi=*)   multi="${arg#*=}" ;;
       allow_null=*) allow_null="${arg#*=}" ;;
       header=*)  header="${arg#*=}" ;;
+	  cursor=*)	cursor="${arg#*=}" ;;
+	  cursor_space=*)	cursor_space="${arg#*=}" ;;
 	  # керування альтернативним екраном
       altscreen=*) altscreen="${arg#*=}" ;;		# altscreen=1|0|on|off|alt|main|auto
       alt=*)       altscreen="${arg#*=}" ;;		# синонім altscreen
@@ -429,6 +441,24 @@ function menu_choose() {
   local _WRAP_OFF _WRAP_ON
   _WRAP_OFF=$(tput rmam 2>/dev/null) || _WRAP_OFF=$'\e[?7l'
   _WRAP_ON=$(tput smam 2>/dev/null)  || _WRAP_ON=$'\e[?7h'
+  
+  # Налаштування курсора
+  if [[ -z "$cursor" ]]; then
+    if [[ -n "${MENU_CHOOSE_CURSOR:-}" ]]; then
+		cursor="${MENU_CHOOSE_CURSOR:-}"
+	else
+		cursor="> "
+	fi
+  fi
+  if [[ -z "$cursor_space" ]]; then
+	if [[ -n "${MENU_CHOOSE_CURSOR:-}" && -n "${MENU_CHOOSE_CURSOR_SPACE:-}" ]]; then
+		cursor_space="${MENU_CHOOSE_CURSOR_SPACE:-}"
+	else
+		cursor_space=${#cursor}
+	fi
+  fi
+  local cursor_space_str
+  printf -v cursor_space_str '%*s' "$cursor_space" ''
   
   # Налаштування повернення: за замовчуванням values; базу беремо з env або 0
   local out_mode

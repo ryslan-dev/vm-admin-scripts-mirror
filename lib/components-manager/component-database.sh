@@ -822,13 +822,15 @@ function mysql_filter_menu_items(){
 
 	local -n Items="$1"
 	local -n Labels="$2"
-
+	
+	HEADER_LABELS[mysql]="$(array_get HEADER_LABELS database) MySQL"
+	
 	Labels=(
 		[c]="Скасувати"
 		[x]="Вийти"
 		[cancel]="${HEADER_LABELS[cancel]:-}"
 		[exit]="${HEADER_LABELS[exit]:-}"
-		[mysql_menu_header]=$(array_get HEADER_LABELS database)
+		[mysql_menu_header]="$(array_get HEADER_LABELS database) MySQL"
 		[all]="Усі"
 		[local]="Локальні"
 		[system]="Системні"
@@ -861,6 +863,8 @@ function mysqluser_filter_menu_items(){
 
 	local -n Items="$1"
 	local -n Labels="$2"
+	
+	HEADER_LABELS[mysqluser]="$(array_get HEADER_LABELS dbuser) MySQL"
 
 	Labels=(
 		[c]="Скасувати"

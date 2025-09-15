@@ -550,6 +550,10 @@ function component_menu_choose(){
 	[[ ${#Items[@]} -eq 0 ]] && { log_error "component_menu_choose: елементів меню не знайдено"; return 1; }
 	[[ ${#Labels[@]} -eq 0 ]] && { log_error "component_menu_choose: заголовків меню не знайдено"; return 1; }
 	
+	# menu header
+	local Menu_header=""
+	[[ -n "$header" ]] && Menu_header="$(menu_header "$header")"
+	
 	# menu list
 	local Menu_items=()
 	local TAB=$'\t'
@@ -557,6 +561,7 @@ function component_menu_choose(){
 		Menu_items+=("${key}${TAB}${Labels[$key]:-$key}")
 	done
 	
+	# menu actions
 	local Actions=("ok" "cancel" "exit")
 	local -A Action_labels=(
 		[ok]="OK"
@@ -567,9 +572,6 @@ function component_menu_choose(){
 	for key in "${Actions[@]}"; do
 		Menu_actions+=("${Action_labels[$key]:-$key}")
 	done
-	
-	local Menu_header=""
-	[[ -n "$header" ]] && Menu_header="$(menu_header "$header")"
 	
 	while true; do
 		
@@ -1118,16 +1120,58 @@ function component_filter_menu() {
 	# menu choose
 	if [[ "$MENU_CHOOSE_TYPE" == "menu_choose" ]] && ! is_array_empty "filter_menu_items" && ! is_array_empty "filter_menu_labels"; then
 		
+		# menu header
+		local Menu_header=""
+		[[ -n "$Header" ]] && Menu_header="$(menu_header "$Header")"
+		
+		# menu list
+		local Menu_items=()
+		local TAB=$'\t'
+		for key in "${filter_menu_items[@]}"; do
+			Menu_items+=("${key}${TAB}${filter_menu_labels[$key]:-$key}")
+		done
+		
+		# menu actions
+		local Actions=("ok" "cancel" "exit")
+		local -A Action_labels=(
+			[ok]="OK"
+			[cancel]="Скасувати"
+			[exit]="Вийти"
+		)
+		local Menu_actions=()
+		for key in "${Actions[@]}"; do
+			Menu_actions+=("${Action_labels[$key]:-$key}")
+		done
+		
 		FILTER=()
 		SEARCH=""
-
-		component_menu_choose items=filter_menu_items labels=filter_menu_labels outvar=FILTER multi=1 allow_null=1 header="$Header"
+		local MenuAact=""
+			
+		menu_choose \
+		header="$Menu_header" \
+		items=Menu_items item_retcol=1 \
+		multi=1  \
+		allow_null=1 \
+		outvar=FILTER \
+		actions_ref=Menu_actions actionvar=MenuAact
+		
 		rc=$?
-
-		if [[ $rc -gt 0 ]]; then
-			return "$rc"
+	
+		if [[ -n "$MenuAact" ]]; then
+			MenuAact=$(get_array_key "$MenuAact" Action_labels)
 		fi
-
+		
+		if [[ $rc -gt 0 ]]; then
+			[[ "$rc" == "${MENU_CHOOSE_EXIT_RC:-3}" ]] && exit 0
+			[[ "$rc" == "${MENU_CHOOSE_ABORT_RC:-130}" ]] && exit 0
+			return "$rc"
+		else
+			case "$MenuAact" in
+				cancel) return "${MENU_CHOOSE_CANCEL_RC:-2}" ;;
+				exit) exit 0 ;;
+			esac
+		fi
+			
 		# якщо вибрано "search" — питаємо рядок для пошуку
 		if in_array "search" FILTER; then
 			while true; do
@@ -1139,7 +1183,7 @@ function component_filter_menu() {
 				fi
 				break
 			done
-        fi
+		fi
 		
 		return "$rc"
 	
@@ -1319,10 +1363,14 @@ function component_list_menu() {
 		while true; do
 	
 			local Header
-			if is_array_single COMPONENTS; then
-				Header="${BLUE_BOLD}🟦  $(get_label available_component):${NC}"$'\n'
+			if array_key_has_value "$TYPE" HEADER_LABELS; then
+				Header="${HEADER_LABELS[$TYPE]}"
 			else
-				Header="${BLUE_BOLD}🟦  $(get_label available_components):${NC}"$'\n'
+				if is_array_single COMPONENTS; then
+					Header="${BLUE_BOLD}🟦  $(get_label available_component):${NC}"
+				else
+					Header="${BLUE_BOLD}🟦  $(get_label available_components):${NC}"
+				fi
 			fi
 	
 			local Actions=("ok" "cancel" "exit")
@@ -1338,7 +1386,7 @@ function component_list_menu() {
 		
 			local MenuAact=""
 		
-			menu_choose header="$Header" items=COMPONENTS outvar=SELECTED_COMPONENTS multi=1 allow_null=0 actions_ref=Menu_actions actionvar=MenuAact
+			menu_choose header="$(menu_header "$Header")" items=COMPONENTS outvar=SELECTED_COMPONENTS multi=1 allow_null=0 actions_ref=Menu_actions actionvar=MenuAact
 			#menu_gum header="$Header" options=COMPONENTS outvar=SELECTED_COMPONENTS multi=1
 			#menu_fzf header="$Header" options=COMPONENTS outvar=SELECTED_COMPONENTS multi=1 cursor">"
 			rc=$?
